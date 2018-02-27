@@ -33,11 +33,11 @@ class ViewController: UIViewController {
             let lastLocation = locations.last
             let gps = GPS(ts: Date(), lat: (lastLocation?.coordinate.latitude)!, lon: (lastLocation?.coordinate.longitude)!, alt: (lastLocation?.altitude)!, acc: (lastLocation?.verticalAccuracy)!)
             return gps
-        }.throttle(3.0, latest: false, scheduler: MainScheduler.instance)
+            }.buffer(timeSpan: 3, count:100,scheduler: MainScheduler.instance)
 
         let batteryObservable = Observable<Int>.interval(3.0, scheduler: MainScheduler.instance).map({ _ -> Battery in
             return Battery(ts: Date(), level: UIDevice.current.batteryLevel * 100)
-        })
+        }).buffer(timeSpan: 3, count:100,scheduler: MainScheduler.instance)
 
         Observable<Int>.interval(1, scheduler: MainScheduler.instance)
             .map({ _ in 1})
@@ -50,9 +50,7 @@ class ViewController: UIViewController {
         let pedometerObservable = pedometer.rx.pedometer(from: Date()).debug("pedometer")
 
         Observable.zip(locationObservable, batteryObservable ).debug("zip")
-            .throttle(3, latest: false, scheduler: MainScheduler.instance)
             .subscribe(onNext: { _ in
-            
         }).disposed(by: disposeBag)
         
         // それらを一定間隔で固めて送信するStreamを作る
